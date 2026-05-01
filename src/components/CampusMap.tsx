@@ -14,8 +14,8 @@ interface CampusMapProps {
 
 // Default campus center coordinates - you can update this to your university's location
 const DEFAULT_CENTER = {
-  lat: -15.3875, // Example: University of Zambia coordinates
-  lng: 28.3228,
+  lat: -14.296185, //Mulungushi University Default center
+  lng: 28.553279,
 };
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
