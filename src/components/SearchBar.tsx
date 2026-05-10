@@ -1,3 +1,5 @@
+// client/src/components/SearchBar.tsx
+
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { LocationCategory } from '@/types/location';
@@ -11,12 +13,12 @@ interface SearchBarProps {
 }
 
 const categories: { value: LocationCategory | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'academic', label: 'Academic' },
+  { value: 'all',         label: 'All' },
+  { value: 'academic',    label: 'Academic' },
   { value: 'residential', label: 'Residential' },
-  { value: 'dining', label: 'Dining' },
-  { value: 'recreation', label: 'Recreation' },
-  { value: 'services', label: 'Services' }
+  { value: 'dining',      label: 'Dining' },
+  { value: 'recreation',  label: 'Recreation' },
+  { value: 'services',    label: 'Services' }
 ];
 
 export default function SearchBar({
@@ -37,7 +39,7 @@ export default function SearchBar({
           className="pl-10 h-12 text-base dark:bg-gray-700 dark:border-gray-600"
         />
       </div>
-      
+
       <div className="flex flex-wrap gap-2">
         {categories.map((category) => (
           <Badge

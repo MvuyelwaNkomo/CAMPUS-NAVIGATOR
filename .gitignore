@@ -33,3 +33,19 @@ core
 .github/
 
 **/tempobook/**
+
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Environment files - NEVER push these
+.env
+server/.env
+
+# Build output
+dist/
+
+# Logs
+*.log
+
+

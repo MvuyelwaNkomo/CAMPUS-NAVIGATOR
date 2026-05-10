@@ -1,14 +1,30 @@
-import { ExternalLink, GraduationCap, Moon, Sun } from 'lucide-react';
+// client/src/components/Header.tsx
+// Updated to show logged-in user info and logout button
+
+import { ExternalLink, GraduationCap, Moon, Sun, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout }       = useAuth();
+  const navigate               = useNavigate();
+
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
+
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   return (
     <header className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-900 dark:to-blue-950 text-white shadow-lg">
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+
+          {/* Logo + Title */}
           <div className="flex items-center gap-3">
             <div className="bg-white/10 p-2 rounded-lg backdrop-blur-sm">
               <GraduationCap className="w-8 h-8" />
@@ -18,7 +34,11 @@ export default function Header() {
               <p className="text-blue-100 dark:text-blue-200 text-sm">Your first-year navigation companion</p>
             </div>
           </div>
+
+          {/* Right Actions */}
           <div className="flex items-center gap-2">
+
+            {/* Theme toggle */}
             <Button
               variant="ghost"
               size="icon"
@@ -27,15 +47,48 @@ export default function Header() {
             >
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </Button>
+
+            {/* Admin panel link (only for admins) */}
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium flex items-center gap-2"
+                onClick={() => navigate('/admin')}
+              >
+                <Shield className="w-4 h-4" />
+                Admin Panel
+              </Button>
+            )}
+
+            {/* Student portal */}
             <Button
               variant="secondary"
               size="lg"
               className="bg-white text-blue-700 hover:bg-blue-50 dark:bg-blue-100 dark:text-blue-900 dark:hover:bg-blue-200 font-semibold shadow-md"
-              onClick={() => window.open('https://edurole.mu.ac.zm/', '_blank')}
+              onClick={() => window.open('https://edurole.mu.ac.zm/', '_blank', 'noopener,noreferrer')}
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               University Website
             </Button>
+
+            {/* User info + logout */}
+            {user && (
+              <div className="flex items-center gap-2 pl-2 border-l border-white/20">
+                <span className="text-sm text-blue-100 hidden sm:block">
+                  {user.first_name}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="bg-white/10 hover:bg-white/20 text-white"
+                  onClick={handleLogout}
+                  title="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
