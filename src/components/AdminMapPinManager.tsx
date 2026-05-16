@@ -45,7 +45,7 @@ export default function AdminMapPinManager() {
   const [loading,      setLoading]      = useState(false);
   const [message,      setMessage]      = useState('');
 
-  const MULUNGUSHI = { lat: -14.4469, lng: 28.4527 };
+  const MULUNGUSHI = { lat: -14.297214710380569, lng: 28.56097268039799 };
 
   useEffect(() => { loadPins(); }, []);
 
@@ -64,10 +64,19 @@ export default function AdminMapPinManager() {
     if (!pendingCoords) return;
     try {
       if (location.latitude !== null) {
-        await adminUpdatePin(location.id, pendingCoords);
+        // ✅
+await adminUpdatePin(location.id, {
+  latitude: pendingCoords.lat,
+  longitude: pendingCoords.lng
+});
         setMessage(`Updated pin for ${location.name}`);
       } else {
-        await adminCreatePin({ location_id: location.id, ...pendingCoords });
+        // ✅
+await adminCreatePin({
+  location_id: location.id,
+  latitude: pendingCoords.lat,
+  longitude: pendingCoords.lng
+});
         setMessage(`Pinned ${location.name} successfully`);
       }
       setShowPicker(false);

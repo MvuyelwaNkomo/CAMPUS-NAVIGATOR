@@ -53,6 +53,7 @@ function App() {
       </ThemeProvider>
     </AuthProvider>
   );
+  
 }
 
 export default App;

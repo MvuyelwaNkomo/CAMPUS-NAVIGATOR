@@ -46,8 +46,8 @@ function createIcon(color: string) {
 
 // Mulungushi University, Kabwe — correct coordinates
 const MU_CENTER: MapCoordinates = {
-  lat: -14.4469,
-  lng: 28.4527,
+  lat: -14.297214710380569,
+  lng: 28.56097268039799,
 };
 
 interface CampusMapProps {
