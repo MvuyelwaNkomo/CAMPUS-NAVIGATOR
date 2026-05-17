@@ -1,48 +1,35 @@
 // server/src/utils/email.ts
-// Handles all outgoing emails - verification, password reset, welcome
+// Handles all outgoing emails using Resend (works on cloud hosting like Render)
 
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// ── Create transporter ────────────────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  host:   process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port:   parseInt(process.env.EMAIL_PORT || '587'),
-  secure: false, // true for 465, false for 587
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false // 👈 Add this line to prevent cloud hosting handshake drops
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Verify connection on startup
-transporter.verify((error) => {
-  if (error) {
-    console.error('❌ Email service error:', error.message);
-  } else {
-    console.log('✅ Email service ready');
-  }
-});
+const FROM = process.env.EMAIL_FROM || 'Campus Navigator <onboarding@resend.dev>';
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
-// ── Email Templates ───────────────────────────────────────────────────────────
+// ── Verify connection on startup ──────────────────────────────────────────────
+if (!process.env.RESEND_API_KEY) {
+  console.error('❌ RESEND_API_KEY is not set in environment variables');
+} else {
+  console.log('✅ Email service ready (Resend)');
+}
 
-// Verification email
+// ── Verification Email ────────────────────────────────────────────────────────
 export async function sendVerificationEmail(
   toEmail: string,
   firstName: string,
   token: string
 ): Promise<void> {
-  const verifyUrl = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
+  const verifyUrl = `${CLIENT_URL}/verify-email?token=${token}`;
 
-  await transporter.sendMail({
-    from:    process.env.EMAIL_FROM,
+  const { error } = await resend.emails.send({
+    from:    FROM,
     to:      toEmail,
     subject: 'Verify Your Campus Navigator Account',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        
+
         <div style="background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
           <h1 style="color: white; margin: 0; font-size: 24px;">Campus Navigator</h1>
           <p style="color: #bfdbfe; margin: 8px 0 0; font-size: 14px;">Mulungushi University</p>
@@ -51,7 +38,8 @@ export async function sendVerificationEmail(
         <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
           <h2 style="color: #1e3a5f; font-size: 20px; margin-top: 0;">Welcome, ${firstName}! 👋</h2>
           <p style="color: #374151; line-height: 1.6;">
-            Thank you for registering on Campus Navigator. Please verify your email address to activate your account.
+            Thank you for registering on Campus Navigator. Please verify your 
+            email address to activate your account.
           </p>
 
           <div style="text-align: center; margin: 30px 0;">
@@ -64,17 +52,19 @@ export async function sendVerificationEmail(
 
           <p style="color: #6b7280; font-size: 13px; line-height: 1.6;">
             Or copy and paste this link into your browser:<br/>
-            <a href="${verifyUrl}" style="color: #2563eb;">${verifyUrl}</a>
+            <a href="${verifyUrl}" style="color: #2563eb; word-break: break-all;">${verifyUrl}</a>
           </p>
 
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
 
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-            This link expires in 24 hours. If you did not create an account, you can safely ignore this email.
+            This link expires in 24 hours. If you did not create an account, 
+            you can safely ignore this email.
           </p>
         </div>
 
-        <div style="background: #f9fafb; padding: 16px; border-radius: 0 0 12px 12px; text-align: center; border: 1px solid #e5e7eb; border-top: none;">
+        <div style="background: #f9fafb; padding: 16px; border-radius: 0 0 12px 12px; 
+                    text-align: center; border: 1px solid #e5e7eb; border-top: none;">
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">
             © 2026 Campus Navigator · Mulungushi University · Kabwe, Zambia
           </p>
@@ -83,18 +73,22 @@ export async function sendVerificationEmail(
       </div>
     `,
   });
+
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
 }
 
-// Password reset email
+// ── Password Reset Email ──────────────────────────────────────────────────────
 export async function sendPasswordResetEmail(
   toEmail: string,
   firstName: string,
   token: string
 ): Promise<void> {
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+  const resetUrl = `${CLIENT_URL}/reset-password?token=${token}`;
 
-  await transporter.sendMail({
-    from:    process.env.EMAIL_FROM,
+  const { error } = await resend.emails.send({
+    from:    FROM,
     to:      toEmail,
     subject: 'Reset Your Campus Navigator Password',
     html: `
@@ -108,8 +102,8 @@ export async function sendPasswordResetEmail(
         <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
           <h2 style="color: #1e3a5f; font-size: 20px; margin-top: 0;">Password Reset Request</h2>
           <p style="color: #374151; line-height: 1.6;">
-            Hi ${firstName}, we received a request to reset your Campus Navigator password.
-            Click the button below to set a new password.
+            Hi ${firstName}, we received a request to reset your Campus Navigator 
+            password. Click the button below to set a new password.
           </p>
 
           <div style="text-align: center; margin: 30px 0;">
@@ -122,18 +116,19 @@ export async function sendPasswordResetEmail(
 
           <p style="color: #6b7280; font-size: 13px; line-height: 1.6;">
             Or copy and paste this link into your browser:<br/>
-            <a href="${resetUrl}" style="color: #2563eb;">${resetUrl}</a>
+            <a href="${resetUrl}" style="color: #2563eb; word-break: break-all;">${resetUrl}</a>
           </p>
 
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
 
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-            This link expires in 1 hour. If you did not request a password reset, 
+            This link expires in 1 hour. If you did not request a password reset,
             please ignore this email — your account is safe.
           </p>
         </div>
 
-        <div style="background: #f9fafb; padding: 16px; border-radius: 0 0 12px 12px; text-align: center; border: 1px solid #e5e7eb; border-top: none;">
+        <div style="background: #f9fafb; padding: 16px; border-radius: 0 0 12px 12px;
+                    text-align: center; border: 1px solid #e5e7eb; border-top: none;">
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">
             © 2026 Campus Navigator · Mulungushi University · Kabwe, Zambia
           </p>
@@ -142,15 +137,19 @@ export async function sendPasswordResetEmail(
       </div>
     `,
   });
+
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
 }
 
-// Welcome email (sent after verification)
+// ── Welcome Email ─────────────────────────────────────────────────────────────
 export async function sendWelcomeEmail(
   toEmail: string,
   firstName: string
 ): Promise<void> {
-  await transporter.sendMail({
-    from:    process.env.EMAIL_FROM,
+  const { error } = await resend.emails.send({
+    from:    FROM,
     to:      toEmail,
     subject: 'Welcome to Campus Navigator! 🎓',
     html: `
@@ -162,10 +161,13 @@ export async function sendWelcomeEmail(
         </div>
 
         <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
-          <h2 style="color: #1e3a5f; font-size: 20px; margin-top: 0;">You're all set, ${firstName}! 🎉</h2>
+          <h2 style="color: #1e3a5f; font-size: 20px; margin-top: 0;">
+            You're all set, ${firstName}! 🎉
+          </h2>
           <p style="color: #374151; line-height: 1.6;">
-            Your Campus Navigator account has been verified. You can now log in and explore the full campus map, 
-            find buildings, locate your hostel, and navigate Mulungushi University with ease.
+            Your Campus Navigator account has been verified. You can now log in 
+            and explore the full campus map, find buildings, locate your hostel, 
+            and navigate Mulungushi University with ease.
           </p>
 
           <div style="background: #eff6ff; border-radius: 8px; padding: 20px; margin: 24px 0;">
@@ -180,7 +182,7 @@ export async function sendWelcomeEmail(
           </div>
 
           <div style="text-align: center; margin: 24px 0;">
-            <a href="${process.env.CLIENT_URL}/login"
+            <a href="${CLIENT_URL}/login"
                style="background: #2563eb; color: white; padding: 14px 32px; border-radius: 8px;
                       text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block;">
               Go to Campus Navigator
@@ -188,7 +190,8 @@ export async function sendWelcomeEmail(
           </div>
         </div>
 
-        <div style="background: #f9fafb; padding: 16px; border-radius: 0 0 12px 12px; text-align: center; border: 1px solid #e5e7eb; border-top: none;">
+        <div style="background: #f9fafb; padding: 16px; border-radius: 0 0 12px 12px;
+                    text-align: center; border: 1px solid #e5e7eb; border-top: none;">
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">
             © 2026 Campus Navigator · Mulungushi University · Kabwe, Zambia
           </p>
@@ -197,4 +200,8 @@ export async function sendWelcomeEmail(
       </div>
     `,
   });
+
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
 }
