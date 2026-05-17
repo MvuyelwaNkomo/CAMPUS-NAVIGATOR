@@ -76,13 +76,19 @@ export async function register(req: Request, res: Response): Promise<void> {
   const user = result.rows[0];
 
   // Send verification email
-  try {
-    await sendVerificationEmail(user.email, user.first_name, verification_token);
-    console.log(`✅ Verification email sent to ${user.email}`);
-  } catch (emailErr: any) {
-    console.error('❌ Failed to send verification email:', emailErr.message);
-    // Don't fail registration if email fails — just log it
-  }
+  // Send verification email
+try {
+  await sendVerificationEmail(user.email, user.first_name, verification_token);
+  console.log(`✅ Verification email sent to ${user.email}`);
+} catch (emailErr: any) {
+  console.error('❌ Failed to send verification email:', emailErr.message);
+  // Registration still succeeds even if email fails
+}
+
+res.status(201).json({
+  message: `Account created successfully! Your account is pending verification. Please contact the campus ICT department or administrator to activate your account.`,
+  user: { id: user.id, email: user.email, first_name: user.first_name }
+});
 
   await logAction({
     userId: user.id, action: 'CREATE_USER',
