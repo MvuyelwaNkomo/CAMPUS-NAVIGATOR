@@ -12,6 +12,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  tls: {
+    rejectUnauthorized: false // 👈 Add this line to prevent cloud hosting handshake drops
+  }
 });
 
 // Verify connection on startup
