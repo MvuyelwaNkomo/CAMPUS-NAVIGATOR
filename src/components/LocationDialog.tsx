@@ -138,7 +138,7 @@ const phone = location.contact_phone || location.contact?.split('|')[1]?.trim() 
               Tips for First-Years
             </h3>
             <ul className="pl-7 space-y-2">
-              // ✅ Handles both old string format and new API object format
+              
 {location.tips.map((tip: any, index: number) => (
   <li key={index} className="text-muted-foreground flex gap-2">
     <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
