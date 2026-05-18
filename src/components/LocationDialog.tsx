@@ -27,7 +27,9 @@ const categoryColors: Record<string, string> = {
 export default function LocationDialog({ location, open, onOpenChange }: LocationDialogProps) {
   if (!location) return null;
 
-  const [email, phone] = location.contact.split('|').map(s => s.trim());
+  // ✅ Support both old format (contact string) and new API format (separate fields)
+const email = location.contact_email || location.contact?.split('|')[0]?.trim() || '';
+const phone = location.contact_phone || location.contact?.split('|')[1]?.trim() || '';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
