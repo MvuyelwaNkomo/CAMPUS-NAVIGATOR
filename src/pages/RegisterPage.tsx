@@ -64,8 +64,7 @@ export default function RegisterPage() {
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Account Created!</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              We've sent a verification link to <strong>{form.email}</strong>.
-              Please check your inbox and verify your email before logging in.
+              You have sucessfully created your account. Please head back to the login page.
             </p>
             <button
               onClick={() => navigate('/login')}
@@ -105,7 +104,7 @@ export default function RegisterPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Student Number</label>
               <input
                 type="text" name="student_number" value={form.student_number}
-                onChange={handleChange} required placeholder="e.g. MU2024/001"
+                onChange={handleChange} required placeholder="e.g. 202400001"
                 className="w-full h-11 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -135,7 +134,7 @@ export default function RegisterPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">University Email</label>
               <input
                 type="email" name="email" value={form.email}
-                onChange={handleChange} required placeholder="you@mu.ac.zm"
+                onChange={handleChange} required placeholder="your email address here"
                 className="w-full h-11 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="mt-1 text-xs text-gray-400">Must be a @mu.ac.zm or @student.mu.ac.zm address</p>
