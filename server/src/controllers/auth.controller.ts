@@ -196,7 +196,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     token,
     user: {
       id: user.id,
-      email: user.email,
+      student_number: user.student_number,
       first_name: user.first_name,
       last_name: user.last_name,
       role: user.role
