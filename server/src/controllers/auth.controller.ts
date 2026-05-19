@@ -105,7 +105,7 @@ res.status(201).json({
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 export async function login(req: Request, res: Response): Promise<void> {
-  const { email, password } = req.body;
+  const { student_number, password } = req.body;
 
   // Fetch user with role name
   const result = await pool.query(
@@ -113,17 +113,17 @@ export async function login(req: Request, res: Response): Promise<void> {
             u.is_active, u.is_verified, r.name AS role
      FROM users u
      JOIN roles r ON u.role_id = r.id
-     WHERE u.email = $1`,
-    [email]
+     WHERE u.student_number = $1`,
+    [student_number]
   );
 
   if (result.rowCount === 0) {
     await logAction({
       action: 'FAILED_LOGIN',
-      description: `No user found for email: ${email}`,
+      description: `No user found for student number: ${student_number}`,
       ipAddress: req.ip
     });
-    res.status(401).json({ error: 'Invalid email or password.' });
+    res.status(401).json({ error: 'Invalid student number or password.' });
     return;
   }
 
@@ -148,17 +148,17 @@ export async function login(req: Request, res: Response): Promise<void> {
     await logAction({
       action: 'FAILED_LOGIN',
       userId: user.id,
-      description: `Failed password attempt for: ${email}`,
+      description: `Failed password attempt for: ${student_number}`,
       ipAddress: req.ip
     });
-    res.status(401).json({ error: 'Invalid email or password.' });
+    res.status(401).json({ error: 'Invalid student number or password.' });
     return;
   }
 
   // Sign JWT
   const token = signToken({
     userId: user.id,
-    email: user.email,
+    student_number: user.student_number,
     role: user.role
   });
 

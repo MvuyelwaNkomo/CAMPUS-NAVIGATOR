@@ -5,7 +5,7 @@ import jwt = require('jsonwebtoken');
 
 export interface JwtPayload {
   userId: string;
-  email: string;
+  student_number: string;
   role: string;
   iat?: number;
   exp?: number;

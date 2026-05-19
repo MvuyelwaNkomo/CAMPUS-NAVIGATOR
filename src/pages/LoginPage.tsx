@@ -13,7 +13,8 @@ export default function LoginPage() {
   const from = (location.state as any)?.from?.pathname || '/home';
   const locationError = (location.state as any)?.error;
 
-  const [email,    setEmail]    = useState('');
+  // Changed state from email to studentNumber
+  const [studentNumber, setStudentNumber] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error,    setError]    = useState(locationError || '');
@@ -31,7 +32,8 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      // Pass studentNumber instead of email
+      await login(studentNumber, password);
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed. Please try again.');
@@ -63,17 +65,17 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
+            {/* Student Number */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                University Email
+                Student Number
               </label>
               <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                type="text" // Changed from email to text
+                value={studentNumber}
+                onChange={e => setStudentNumber(e.target.value)}
                 required
-                placeholder="you@mu.ac.zm"
+                placeholder="e.g. 12345678"
                 className="w-full h-11 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
