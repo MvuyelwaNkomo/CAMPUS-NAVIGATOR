@@ -9,6 +9,7 @@ export interface JwtPayload {
   role: string;
   iat?: number;
   exp?: number;
+  student_number?: string;
 }
 
 const SECRET  = process.env.JWT_SECRET as string;
