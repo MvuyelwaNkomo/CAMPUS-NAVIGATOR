@@ -30,7 +30,6 @@ export default function AdminLocationForm({ location, onSave, onCancel }: Props)
   const isEditing = !!location;
 
   const [form, setForm] = useState({
-    id:               location?.id            || '',
     name:             location?.name          || '',
     description:      location?.description   || '',
     image_url:        location?.image_url     || '',
@@ -104,18 +103,8 @@ export default function AdminLocationForm({ location, onSave, onCancel }: Props)
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-          {/* ID - only on create */}
-          {!isEditing && (
-            <div>
-              <label className={labelClass}>Location ID</label>
-              <input name="id" value={form.id} onChange={handleChange} required
-                placeholder="e.g. 10, 4l" className={inputClass} />
-              <p className="mt-1 text-xs text-gray-400">Short unique identifier. Cannot be changed later.</p>
-            </div>
-          )}
-
           {/* Name */}
-          <div className={!isEditing ? '' : 'md:col-span-1'}>
+          <div className="md:col-span-1">
             <label className={labelClass}>Location Name</label>
             <input name="name" value={form.name} onChange={handleChange} required
               placeholder="e.g. Main Library" className={inputClass} />
