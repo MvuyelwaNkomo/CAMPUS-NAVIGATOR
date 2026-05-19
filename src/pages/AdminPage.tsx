@@ -343,27 +343,31 @@ export default function AdminPage() {
                           </td>
                           <td className="px-4 py-3">
                             {u.role !== 'superadmin' && (
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleRoleChange(u.id, u.role)}
-                                  className="px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                  title={u.role === 'student' ? 'Promote to Admin' : 'Demote to Student'}
-                                >
-                                  {u.role === 'student' ? '↑ Make Admin' : '↓ Make Student'}
-                                </button>
-                                <button
-                                  onClick={() => handleStatusChange(u.id, u.is_active)}
-                                  className={`p-1.5 rounded-lg transition-colors ${
-                                    u.is_active
-                                      ? 'text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
-                                      : 'text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
-                                  }`}
-                                  title={u.is_active ? 'Deactivate' : 'Activate'}
-                                >
-                                  {u.is_active ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                            )}
+  <div className="flex items-center gap-2">
+    {/* Only superadmin can change roles */}
+    {isSuperAdmin && (
+      <button
+        onClick={() => handleRoleChange(u.id, u.role)}
+        className="px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+        title={u.role === 'student' ? 'Promote to Admin' : 'Demote to Student'}
+      >
+        {u.role === 'student' ? '↑ Make Admin' : '↓ Make Student'}
+      </button>
+    )}
+    {/* Both admin and superadmin can activate/deactivate */}
+    <button
+      onClick={() => handleStatusChange(u.id, u.is_active)}
+      className={`p-1.5 rounded-lg transition-colors ${
+        u.is_active
+          ? 'text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+          : 'text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+      }`}
+      title={u.is_active ? 'Deactivate' : 'Activate'}
+    >
+      {u.is_active ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
+    </button>
+  </div>
+)}
                           </td>
                         </tr>
                       ))}
