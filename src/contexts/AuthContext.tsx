@@ -1,24 +1,22 @@
 // client/src/contexts/AuthContext.tsx
-// Provides global auth state: user, token, login, logout
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthState } from '../types/auth';
+import { User, AuthState, LoginCredentials } from '../types/auth';
 import { loginApi, logoutApi, getMeApi } from '../api/auth';
 
 interface AuthContextType extends AuthState {
-  login:  (studentNumber: string, password: string) => Promise<void>;
+  login:  (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user,  setUser]  = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user,      setUser]      = useState<User | null>(null);
+  const [token,     setToken]     = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // On mount: try to restore session from sessionStorage
-  // (sessionStorage clears on tab close — safer than localStorage)
+  // On mount: restore session from sessionStorage
   useEffect(() => {
     const storedToken = sessionStorage.getItem('cn_token');
     if (storedToken) {
@@ -36,9 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  async function login(email: string, password: string): Promise<void> {
-    const data = await loginApi({ email, password });
-    // Store token in memory + sessionStorage
+  async function login(credentials: LoginCredentials): Promise<void> {
+    const data = await loginApi(credentials);
     (window as any).__campusNavToken = data.token;
     sessionStorage.setItem('cn_token', data.token);
     setToken(data.token);
@@ -46,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout(): Promise<void> {
-    try { await logoutApi(); } catch { /* ignore errors on logout */ }
+    try { await logoutApi(); } catch {}
     (window as any).__campusNavToken = null;
     sessionStorage.removeItem('cn_token');
     setToken(null);
@@ -55,7 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, token, isAuthenticated: !!user, isLoading, login, logout
+      user, token,
+      isAuthenticated: !!user,
+      isLoading,
+      login, logout
     }}>
       {children}
     </AuthContext.Provider>

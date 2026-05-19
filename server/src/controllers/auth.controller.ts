@@ -38,12 +38,12 @@ export async function register(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // Check student number not already registered
+  // Check email not already registered
   const existing = await pool.query(
-    'SELECT id FROM users WHERE student_number = $1', [student_number]
+    'SELECT id FROM users WHERE email = $1', [email]
   );
   if (existing.rowCount && existing.rowCount > 0) {
-    res.status(409).json({ error: 'An account with this student number already exists.' });
+    res.status(409).json({ error: 'An account with this email already exists.' });
     return;
   }
 
@@ -54,41 +54,35 @@ export async function register(req: Request, res: Response): Promise<void> {
   const verification_token = crypto.randomUUID();
 
   // Get student role id
-const roleResult = await pool.query(
-  `SELECT id FROM roles WHERE name = 'student'`
-);
-const role_id = roleResult.rows[0].id;
+  const roleResult = await pool.query(
+    `SELECT id FROM roles WHERE name = 'student'`
+  );
+  const role_id = roleResult.rows[0].id;
 
-// Insert user — is_verified set to TRUE, no email verification needed
-const result = await pool.query(
-  `INSERT INTO users
-    (student_number, email, password_hash, first_name, last_name, role_id, is_verified)
-   VALUES ($1, $2, $3, $4, $5, $6, TRUE)
-   RETURNING id, email, first_name, last_name`,
-  [
-    student_number || null,
-    email, password_hash,
-    first_name, last_name,
-    role_id
-  ]
-);
+  // Insert user
+  const result = await pool.query(
+    `INSERT INTO users
+      (student_number, email, password_hash, first_name, last_name, role_id, verification_token)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, email, first_name, last_name`,
+    [
+      student_number || null,
+      email, password_hash,
+      first_name, last_name,
+      role_id, verification_token
+    ]
+  );
 
   const user = result.rows[0];
 
   // Send verification email
-  // Send verification email
-try {
-  await sendVerificationEmail(user.email, user.first_name, verification_token);
-  console.log(`✅ Verification email sent to ${user.email}`);
-} catch (emailErr: any) {
-  console.error('❌ Failed to send verification email:', emailErr.message);
-  // Registration still succeeds even if email fails
-}
-
-res.status(201).json({
-  message: `Account created successfully! You can now log in.`,
-  user: { id: user.id, email: user.email, first_name: user.first_name }
-});
+  try {
+    await sendVerificationEmail(user.email, user.first_name, verification_token);
+    console.log(`✅ Verification email sent to ${user.email}`);
+  } catch (emailErr: any) {
+    console.error('❌ Failed to send verification email:', emailErr.message);
+    // Don't fail registration if email fails — just log it
+  }
 
   await logAction({
     userId: user.id, action: 'CREATE_USER',
@@ -105,25 +99,36 @@ res.status(201).json({
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 export async function login(req: Request, res: Response): Promise<void> {
-  const { student_number, password } = req.body;
+  const { student_number, email, password } = req.body;
 
-  // Fetch user with role name
+  // Student logs in with student_number, admin/superadmin logs in with email
+  const isAdminLogin = !!email && !student_number;
+  const identifier   = isAdminLogin ? email : student_number;
+
+  if (!password || !identifier) {
+    res.status(400).json({ error: 'Please provide your credentials and password.' });
+    return;
+  }
+
+  // Fetch user by student_number (student) or email (admin)
   const result = await pool.query(
     `SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name,
             u.is_active, u.is_verified, r.name AS role
      FROM users u
      JOIN roles r ON u.role_id = r.id
-     WHERE u.student_number = $1`,
-    [student_number]
+     WHERE ${isAdminLogin ? 'u.email = $1' : 'u.student_number = $1'}`,
+    [identifier]
   );
 
   if (result.rowCount === 0) {
     await logAction({
       action: 'FAILED_LOGIN',
-      description: `No user found for student number: ${student_number}`,
+      description: `No user found for: ${identifier}`,
       ipAddress: req.ip
     });
-    res.status(401).json({ error: 'Invalid student number or password.' });
+    res.status(401).json({
+      error: isAdminLogin ? 'Invalid email or password.' : 'Invalid student number or password.'
+    });
     return;
   }
 
@@ -148,17 +153,17 @@ export async function login(req: Request, res: Response): Promise<void> {
     await logAction({
       action: 'FAILED_LOGIN',
       userId: user.id,
-      description: `Failed password attempt for: ${student_number}`,
+      description: `Failed password attempt for: ${email}`,
       ipAddress: req.ip
     });
-    res.status(401).json({ error: 'Invalid student number or password.' });
+    res.status(401).json({ error: 'Invalid email or password.' });
     return;
   }
 
   // Sign JWT
   const token = signToken({
     userId: user.id,
-    student_number: user.student_number,
+    email: user.email,
     role: user.role
   });
 
@@ -196,7 +201,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     token,
     user: {
       id: user.id,
-      student_number: user.student_number,
+      email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
       role: user.role
