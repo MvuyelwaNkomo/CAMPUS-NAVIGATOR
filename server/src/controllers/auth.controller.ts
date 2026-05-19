@@ -52,26 +52,26 @@ export async function register(req: Request, res: Response): Promise<void> {
 
   // Generate email verification token
   const verification_token = crypto.randomUUID();
+  
+ // Get student role id
+const roleResult = await pool.query(
+  `SELECT id FROM roles WHERE name = 'student'`
+);
+const role_id = roleResult.rows[0].id;
 
-  // Get student role id
-  const roleResult = await pool.query(
-    `SELECT id FROM roles WHERE name = 'student'`
-  );
-  const role_id = roleResult.rows[0].id;
-
-  // Insert user
-  const result = await pool.query(
-    `INSERT INTO users
-      (student_number, email, password_hash, first_name, last_name, role_id, verification_token)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING id, email, first_name, last_name`,
-    [
-      student_number || null,
-      email, password_hash,
-      first_name, last_name,
-      role_id, verification_token
-    ]
-  );
+// Insert user — is_verified set to TRUE, no email verification needed
+const result = await pool.query(
+  `INSERT INTO users
+    (student_number, email, password_hash, first_name, last_name, role_id, is_verified)
+   VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+   RETURNING id, email, first_name, last_name`,
+  [
+    student_number || null,
+    email, password_hash,
+    first_name, last_name,
+    role_id
+  ]
+);
 
   const user = result.rows[0];
 
@@ -92,7 +92,7 @@ export async function register(req: Request, res: Response): Promise<void> {
   });
 
   res.status(201).json({
-    message: `Account created! A verification link has been sent to ${email}. Please check your inbox.`,
+    message: `Account created successfully! You can now log in.`,
     user: { id: user.id, email: user.email, first_name: user.first_name }
   });
 }
