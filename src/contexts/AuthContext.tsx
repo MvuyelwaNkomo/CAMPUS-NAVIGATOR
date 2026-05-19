@@ -6,7 +6,7 @@ import { User, AuthState } from '../types/auth';
 import { loginApi, logoutApi, getMeApi } from '../api/auth';
 
 interface AuthContextType extends AuthState {
-  login:  (email: string, password: string) => Promise<void>;
+  login:  (studentNumber: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
