@@ -38,12 +38,12 @@ export async function register(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // Check email not already registered
+  // Check student number not already registered
   const existing = await pool.query(
-    'SELECT id FROM users WHERE email = $1', [email]
+    'SELECT id FROM users WHERE student_number = $1', [student_number]
   );
   if (existing.rowCount && existing.rowCount > 0) {
-    res.status(409).json({ error: 'An account with this email already exists.' });
+    res.status(409).json({ error: 'An account with this student number already exists.' });
     return;
   }
 
