@@ -23,10 +23,9 @@ export default function LoginPage() {
   const [error,         setError]         = useState(locationError || '');
   const [loading,       setLoading]       = useState(false);
 
-  // If already logged in redirect appropriately
+  // ── FIX 1: Send already logged-in users to home instead of splitting by role ──
   if (user) {
-    const dest = user.role === 'student' ? '/home' : '/admin';
-    navigate(dest, { replace: true });
+    navigate('/home', { replace: true });
     return null;
   }
 
@@ -40,9 +39,9 @@ export default function LoginPage() {
       } else {
         await login({ email, password });
       }
-      // Redirect based on role — AuthContext sets the user
-      const dest = mode === 'admin' ? '/admin' : from;
-      navigate(dest, { replace: true });
+      
+      // ── FIX 2: Redirect directly to 'from' (defaults to /home) for both modes ──
+      navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed. Please try again.');
     } finally {
@@ -71,6 +70,7 @@ export default function LoginPage() {
           {/* Mode Toggle */}
           <div className="flex rounded-xl border border-gray-200 dark:border-gray-700 p-1 mb-6">
             <button
+              type="button"
               onClick={() => { setMode('student'); setError(''); }}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 mode === 'student'
@@ -82,6 +82,7 @@ export default function LoginPage() {
               Student Login
             </button>
             <button
+              type="button"
               onClick={() => { setMode('admin'); setError(''); }}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 mode === 'admin'
