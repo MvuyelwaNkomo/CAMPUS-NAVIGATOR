@@ -35,3 +35,26 @@ export const adminGetAuditLog = (page = 1, limit = 50, action?: string) => {
   if (action) params.append('action', action);
   return apiClient.get(`/admin/audit-log?${params}`).then(r => r.data);
 };
+// Add at the bottom of admin.ts
+export async function uploadLocationImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const token = (window as any).__campusNavToken;
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/upload/image`,
+    {
+      method:  'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body:    formData,
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Upload failed');
+  }
+
+  const data = await res.json();
+  return data.url; // Returns the Cloudinary URL
+}

@@ -1,8 +1,8 @@
 // client/src/components/AdminLocationForm.tsx
 
-import { useState, useEffect } from 'react';
-import { X, Save, Loader2 } from 'lucide-react';
-import { adminCreateLocation, adminUpdateLocation } from '../api/admin';
+import { useState, useEffect, useRef } from 'react';
+import { X, Save, Loader2, Upload, ImageIcon } from 'lucide-react';
+import { adminCreateLocation, adminUpdateLocation, uploadLocationImage } from '../api/admin';
 import apiClient from '../api/client';
 
 interface Category {
@@ -30,6 +30,7 @@ export default function AdminLocationForm({ location, onSave, onCancel }: Props)
   const [hostelRegions, setHostelRegions] = useState<HostelRegion[]>([]);
   const [loadingMeta,   setLoadingMeta]   = useState(true);
   const [saving,        setSaving]        = useState(false);
+  const [uploading,     setUploading]     = useState(false);
   const [error,         setError]         = useState('');
   const [imgError,      setImgError]      = useState(false);
 
@@ -45,6 +46,8 @@ export default function AdminLocationForm({ location, onSave, onCancel }: Props)
     category_id:      location?.category_id      || '',
     hostel_region_id: location?.hostel_region_id || '',
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load categories and hostel regions from database
   useEffect(() => {
@@ -202,28 +205,66 @@ export default function AdminLocationForm({ location, onSave, onCancel }: Props)
                 className={`${inputClass} h-auto resize-none py-2`} />
             </div>
 
-            {/* Image URL */}
+            {/* Image Upload */}
             <div className="md:col-span-2">
-              <label className={labelClass}>Image URL</label>
-              <input name="image_url" value={form.image_url}
-                onChange={handleChange}
-                placeholder="https://images.unsplash.com/photo-...?w=800&q=80"
-                className={inputClass} />
-              {form.image_url && (
-                <div className="mt-2 h-28 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700">
-                  <img
-                    src={form.image_url} alt="Preview"
-                    className="w-full h-full object-cover"
-                    onError={() => setImgError(true)}
-                    onLoad={() => setImgError(false)}
-                  />
-                  {imgError && (
-                    <p className="text-xs text-red-500 text-center mt-2">
-                      ⚠ Image URL not reachable
+              <label className={labelClass}>Location Image</label>
+
+              {/* Upload Button */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+              >
+                {uploading ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                    <p className="text-sm text-gray-500">Uploading image...</p>
+                  </div>
+                ) : form.image_url ? (
+                  <div className="relative">
+                    <img
+                      src={form.image_url}
+                      alt="Preview"
+                      className="w-full h-40 object-cover rounded-lg"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                      Click to replace image
                     </p>
-                  )}
-                </div>
-              )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <ImageIcon className="w-10 h-10 text-gray-400" />
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      Click to upload a photo
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      JPEG, PNG or WebP · Max 5MB
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploading(true);
+                  setError('');
+                  try {
+                    const url = await uploadLocationImage(file);
+                    setForm(prev => ({ ...prev, image_url: url }));
+                  } catch (err: any) {
+                    setError(err.message || 'Image upload failed. Please try again.');
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+              />
             </div>
 
             {/* Hours */}
