@@ -1,4 +1,6 @@
-import { Clock, Phone, Mail, Lightbulb, X, Building2, MapPin } from 'lucide-react';
+// client/src/components/LocationDialog.tsx
+
+import { Clock, Phone, Mail, Lightbulb, X, Building2, MapPin, Navigation } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,54 +13,99 @@ import { Separator } from '@/components/ui/separator';
 import { Location } from '@/types/location';
 
 interface LocationDialogProps {
-  location: Location | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  location:      Location | null;
+  open:          boolean;
+  onOpenChange:  (open: boolean) => void;
+  onShowOnMap?:  (location: Location) => void; // callback to show location on map
 }
 
 const categoryColors: Record<string, string> = {
-  academic: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700',
+  academic:    'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700',
   residential: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700',
-  dining: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700',
-  recreation: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700',
-  services: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700'
+  dining:      'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700',
+  recreation:  'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700',
+  services:    'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700'
 };
 
-export default function LocationDialog({ location, open, onOpenChange }: LocationDialogProps) {
+export default function LocationDialog({
+  location,
+  open,
+  onOpenChange,
+  onShowOnMap
+}: LocationDialogProps) {
   if (!location) return null;
 
-  // ✅ Support both old format (contact string) and new API format (separate fields)
-const email = location.contact_email || location.contact?.split('|')[0]?.trim() || '';
-const phone = location.contact_phone || location.contact?.split('|')[1]?.trim() || '';
+  // Support both old static format (contact string) and new API format (separate fields)
+  const email = (location as any).contact_email
+    || location.contact?.split('|')[0]?.trim()
+    || '';
+  const phone = (location as any).contact_phone
+    || location.contact?.split('|')[1]?.trim()
+    || '';
+
+  // Support both old (image) and new API format (image_url)
+  const imageUrl = (location as any).image_url || (location as any).image || '';
+
+  // Support both old (hostelRegion) and new API format (hostel_region)
+  const hostelRegion = (location as any).hostel_region || location.hostelRegion;
+  const isHighRise   = (location as any).is_high_rise  || location.isHighRise;
+
+  // Check if location has been pinned on the map
+  const hasPinned = (location as any).latitude !== null &&
+                    (location as any).latitude !== undefined;
+
+  // Tips can be string[] (old) or {text, order}[] (new API)
+  const tips: string[] = Array.isArray((location as any).tips)
+    ? (location as any).tips.map((t: any) => typeof t === 'string' ? t : t.text)
+    : [];
+
+  function handleShowOnMap() {
+    onOpenChange(false);
+    if (onShowOnMap) onShowOnMap(location!);
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto dark:bg-gray-800">
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-10"
+          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-10"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </button>
 
-        <div className="relative h-64 -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-lg">
-          <img
-            src={location.image}
-            alt={location.name}
-            className="w-full h-full object-cover"
-          />
+        {/* Cover Image */}
+        <div className="relative h-64 -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-lg bg-gray-100 dark:bg-gray-700">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={location.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Hide broken image and show fallback
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <MapPin className="w-12 h-12 text-gray-300 dark:text-gray-600" />
+            </div>
+          )}
+
+          {/* Badges overlaid on image */}
           <div className="absolute top-4 left-4 flex flex-col gap-2">
             <Badge className={`${categoryColors[location.category]} capitalize font-semibold text-sm px-3 py-1`}>
               {location.category}
             </Badge>
-            {location.hostelRegion && (
-              <Badge className={`${location.hostelRegion === 'upschool' ? 'bg-blue-500' : 'bg-green-500'} text-white capitalize font-semibold text-sm px-3 py-1`}>
-                {location.hostelRegion}
+            {hostelRegion && (
+              <Badge className={`${hostelRegion === 'upschool' ? 'bg-blue-500' : 'bg-green-500'} text-white capitalize font-semibold text-sm px-3 py-1`}>
+                {hostelRegion}
               </Badge>
             )}
           </div>
-          {location.isHighRise && (
+
+          {isHighRise && (
             <div className="absolute top-4 right-4">
               <Badge className="bg-amber-500 text-white font-semibold text-sm px-3 py-1 flex items-center gap-1">
                 <Building2 className="w-4 h-4" />
@@ -69,16 +116,31 @@ const phone = location.contact_phone || location.contact?.split('|')[1]?.trim() 
         </div>
 
         <DialogHeader>
-          <DialogTitle className="text-3xl font-bold dark:text-gray-100">{location.name}</DialogTitle>
+          <DialogTitle className="text-3xl font-bold dark:text-gray-100">
+            {location.name}
+          </DialogTitle>
           <DialogDescription className="text-base pt-2 dark:text-gray-400">
             {location.description}
           </DialogDescription>
         </DialogHeader>
 
+        {/* Show on Map Button */}
+        {hasPinned && onShowOnMap && (
+          <button
+            onClick={handleShowOnMap}
+            className="flex items-center justify-center gap-2 w-full py-3 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
+          >
+            <MapPin className="w-4 h-4" />
+            Show on Map
+          </button>
+        )}
+
         <Separator className="my-4" />
 
         <div className="space-y-6">
-          {location.hostelRegion && (
+
+          {/* Location Details (hostels only) */}
+          {hostelRegion && (
             <div className="space-y-3">
               <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-gray-100">
                 <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -87,9 +149,9 @@ const phone = location.contact_phone || location.contact?.split('|')[1]?.trim() 
               <div className="pl-7 space-y-1">
                 <p className="text-muted-foreground">
                   <span className="font-medium text-gray-700 dark:text-gray-300">Region:</span>{' '}
-                  <span className="capitalize">{location.hostelRegion}</span>
+                  <span className="capitalize">{hostelRegion}</span>
                 </p>
-                {location.isHighRise && (
+                {isHighRise && (
                   <p className="text-muted-foreground">
                     <span className="font-medium text-gray-700 dark:text-gray-300">Building Type:</span>{' '}
                     High-Rise ({location.floors} Floors)
@@ -99,54 +161,86 @@ const phone = location.contact_phone || location.contact?.split('|')[1]?.trim() 
             </div>
           )}
 
-          <div className="space-y-3">
-            <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-gray-100">
-              <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Operating Hours
-            </h3>
-            <p className="text-muted-foreground pl-7">{location.hours}</p>
-          </div>
-
-          <div className="space-y-3">
-            <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-gray-100">
-              <Phone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Contact Information
-            </h3>
-            <div className="pl-7 space-y-2">
-              {email && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="w-4 h-4" />
-                  <a href={`mailto:${email}`} className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline">
-                    {email}
-                  </a>
-                </div>
-              )}
-              {phone && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="w-4 h-4" />
-                  <a href={`tel:${phone}`} className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline">
-                    {phone}
-                  </a>
-                </div>
-              )}
+          {/* Operating Hours */}
+          {location.hours && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-gray-100">
+                <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                Operating Hours
+              </h3>
+              <p className="text-muted-foreground pl-7">{location.hours}</p>
             </div>
-          </div>
+          )}
 
-          <div className="space-y-3">
-            <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-gray-100">
-              <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Tips for First-Years
-            </h3>
-            <ul className="pl-7 space-y-2">
-              
-{location.tips.map((tip: any, index: number) => (
-  <li key={index} className="text-muted-foreground flex gap-2">
-    <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
-    <span>{typeof tip === 'string' ? tip : tip.text}</span>
-  </li>
-))}
-            </ul>
-          </div>
+          {/* Contact Information */}
+          {(email || phone) && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-gray-100">
+                <Phone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                Contact Information
+              </h3>
+              <div className="pl-7 space-y-2">
+                {email && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="w-4 h-4" />
+                    <a href={`mailto:${email}`}
+                       className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline">
+                      {email}
+                    </a>
+                  </div>
+                )}
+                {phone && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="w-4 h-4" />
+                    <a href={`tel:${phone}`}
+                       className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline">
+                      {phone}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Get Directions */}
+          {hasPinned && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-gray-100">
+                <Navigation className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                Directions
+              </h3>
+              <div className="pl-7">
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${(location as any).latitude},${(location as any).longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-2"
+                >
+                  <Navigation className="w-4 h-4" />
+                  Open in Google Maps
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Tips */}
+          {tips.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-gray-100">
+                <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                Tips for First-Years
+              </h3>
+              <ul className="pl-7 space-y-2">
+                {tips.map((tip, index) => (
+                  <li key={index} className="text-muted-foreground flex gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
         </div>
       </DialogContent>
     </Dialog>

@@ -1,5 +1,5 @@
 // client/src/components/home.tsx
-// Updated to fetch location data from the backend API instead of static locations.ts
+// Updated to fetch from API and support Show on Map from LocationDialog
 
 import { useState, useEffect, useCallback } from 'react';
 import Header from './Header';
@@ -21,17 +21,17 @@ function Home() {
   const [dialogOpen,           setDialogOpen]           = useState(false);
   const [selectedHostelRegion, setSelectedHostelRegion] = useState<HostelRegion | null>(null);
   const [showMap,              setShowMap]              = useState(false);
-  const [isMapEditing,         setIsMapEditing]         = useState(false);
+  const [focusLocation,        setFocusLocation]        = useState<any | null>(null);
 
-  // ── Fetch locations from API whenever filters change ──────────────────────
+  // Fetch locations from API
   const loadLocations = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
       const data = await fetchLocations({
-        search:       searchQuery        || undefined,
-        category:     selectedCategory   !== 'all' ? selectedCategory : undefined,
-        hostel_region:selectedHostelRegion || undefined,
+        search:        searchQuery         || undefined,
+        category:      selectedCategory   !== 'all' ? selectedCategory : undefined,
+        hostel_region: selectedHostelRegion || undefined,
       });
       setLocations(data);
     } catch (err: any) {
@@ -41,7 +41,7 @@ function Home() {
     }
   }, [searchQuery, selectedCategory, selectedHostelRegion]);
 
-  // Debounce search — wait 300ms after user stops typing before hitting the API
+  // Debounce search — wait 300ms after typing
   useEffect(() => {
     const timer = setTimeout(loadLocations, 300);
     return () => clearTimeout(timer);
@@ -52,9 +52,17 @@ function Home() {
     setDialogOpen(true);
   }
 
-  function handleLocationPin(_location: Location, _coordinates: MapCoordinates) {
-    // In the student view this is read-only — pins are managed by admins
-    // CampusMap shows pinned locations from the database via the API
+  // Called when user clicks "Show on Map" in the dialog
+  function handleShowOnMap(location: Location) {
+    setDialogOpen(false);
+    setShowMap(true);       // open the map
+    setFocusLocation(location); // pan map to this location
+    // Scroll to map
+    setTimeout(() => {
+      document.getElementById('campus-map-section')?.scrollIntoView({
+        behavior: 'smooth', block: 'start'
+      });
+    }, 100);
   }
 
   return (
@@ -83,10 +91,13 @@ function Home() {
             </button>
           </div>
 
-          {/* Campus Map — read-only for students */}
+          {/* Campus Map */}
           {showMap && (
-            <div className="mb-6">
-              <CampusMap isEditing={false} onLocationSelect={handleLocationPin} />
+            <div id="campus-map-section" className="mb-6">
+              <CampusMap
+                isEditing={false}
+                focusLocation={focusLocation}
+              />
             </div>
           )}
 
@@ -107,14 +118,14 @@ function Home() {
             />
           )}
 
-          {/* Loading state */}
+          {/* Loading */}
           {loading && (
             <div className="flex justify-center py-16">
               <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
             </div>
           )}
 
-          {/* Error state */}
+          {/* Error */}
           {error && !loading && (
             <div className="text-center py-10">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 max-w-md mx-auto">
@@ -135,7 +146,9 @@ function Home() {
             <div className="text-center py-16">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-12 max-w-md mx-auto">
                 <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">No Results Found</h3>
+                <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                  No Results Found
+                </h3>
                 <p className="text-gray-600 dark:text-gray-400">
                   Try adjusting your search or filter to find what you're looking for.
                 </p>
@@ -155,6 +168,7 @@ function Home() {
               ))}
             </div>
           )}
+
         </div>
       </main>
 
@@ -162,6 +176,7 @@ function Home() {
         location={selectedLocation}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        onShowOnMap={handleShowOnMap}
       />
     </div>
   );
